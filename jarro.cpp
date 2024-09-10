@@ -63,6 +63,17 @@ vector<int> converterEstado(const vector<Capacidade> &jarros)
     return estado;
 }
 
+// Função de heurística para Busca Gulosa
+int heuristica(const vector<Capacidade> &jarros)
+{
+    int heuristica = 0;
+    for (const auto &jarro : jarros)
+    {
+        heuristica += abs(jarro.capacidadeAtual - jarro.objetivo);
+    }
+    return heuristica;
+}
+
 // Função para exibir estatísticas de busca
 void exibirEstatisticas(const string &metodo, const vector<vector<int>> &caminho, int nosVisitados, int nosExpandidos, double fatorRamificacao, long long tempoExecucao)
 {
@@ -311,6 +322,150 @@ void buscaEmProfundidade(const vector<Capacidade> &jarros)
     exibirEstatisticas("DFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
 }
 
+// Função de UCS (Busca de Custo Uniforme)
+void buscaOrdenada(const vector<Capacidade> &jarros)
+{
+    cout << "Iniciando Busca Ordenada (UCS)..." << endl;
+
+    auto cmp = [](const pair<vector<Capacidade>, int> &a, const pair<vector<Capacidade>, int> &b)
+    {
+        return a.second > b.second; // Min-heap com base no custo acumulado
+    };
+    priority_queue<pair<vector<Capacidade>, int>, vector<pair<vector<Capacidade>, int>>, decltype(cmp)> fila(cmp);
+    set<vector<int>> visitado;
+    vector<vector<int>> caminho;
+    int nosVisitados = 0, nosExpandidos = 0;
+
+    fila.push({jarros, 0}); // {estado, custo}
+
+    auto start = high_resolution_clock::now();
+
+    while (!fila.empty())
+    {
+        auto [estadoAtual, custoAtual] = fila.top();
+        fila.pop();
+
+        vector<int> estado = converterEstado(estadoAtual);
+
+        if (visitado.count(estado))
+            continue;
+
+        visitado.insert(estado);
+        caminho.push_back(estado);
+        nosExpandidos++;
+
+        if (todosAtingiramObjetivo(estadoAtual))
+        {
+            nosVisitados = visitado.size();
+            double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<milliseconds>(stop - start).count();
+            exibirEstatisticas("UCS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+            return;
+        }
+
+        // Gerar novos estados
+        for (int i = 0; i < estadoAtual.size(); ++i)
+        {
+            vector<Capacidade> novoEstado = estadoAtual;
+
+            encherJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, custoAtual + 1});
+
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, custoAtual + 1});
+
+            for (int j = 0; j < estadoAtual.size(); ++j)
+            {
+                if (i != j)
+                {
+                    novoEstado = estadoAtual;
+                    transferirAgua(novoEstado, i, j);
+                    if (!visitado.count(converterEstado(novoEstado)))
+                        fila.push({novoEstado, custoAtual + 1});
+                }
+            }
+        }
+    }
+
+    cout << "Nenhuma solucao encontrada." << endl;
+}
+// Função de Busca Gulosa
+void buscaGulosa(const vector<Capacidade> &jarros)
+{
+    cout << "Iniciando Busca Gulosa..." << endl;
+
+    auto cmp = [](const pair<vector<Capacidade>, int> &a, const pair<vector<Capacidade>, int> &b)
+    {
+        return a.second > b.second; // Min-heap com base na heurística
+    };
+    priority_queue<pair<vector<Capacidade>, int>, vector<pair<vector<Capacidade>, int>>, decltype(cmp)> fila(cmp);
+    set<vector<int>> visitado;
+    vector<vector<int>> caminho;
+    int nosVisitados = 0, nosExpandidos = 0;
+
+    fila.push({jarros, heuristica(jarros)});
+
+    auto start = high_resolution_clock::now();
+
+    while (!fila.empty())
+    {
+        auto [estadoAtual, heuristicaAtual] = fila.top();
+        fila.pop();
+
+        vector<int> estado = converterEstado(estadoAtual);
+
+        if (visitado.count(estado))
+            continue;
+
+        visitado.insert(estado);
+        caminho.push_back(estado);
+        nosExpandidos++;
+
+        if (todosAtingiramObjetivo(estadoAtual))
+        {
+            nosVisitados = visitado.size();
+            double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<milliseconds>(stop - start).count();
+            exibirEstatisticas("Busca Gulosa", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+            return;
+        }
+
+        // Gerar novos estados
+        for (int i = 0; i < estadoAtual.size(); ++i)
+        {
+            vector<Capacidade> novoEstado = estadoAtual;
+
+            encherJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, heuristica(novoEstado)});
+
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, heuristica(novoEstado)});
+
+            for (int j = 0; j < estadoAtual.size(); ++j)
+            {
+                if (i != j)
+                {
+                    novoEstado = estadoAtual;
+                    transferirAgua(novoEstado, i, j);
+                    if (!visitado.count(converterEstado(novoEstado)))
+                        fila.push({novoEstado, heuristica(novoEstado)});
+                }
+            }
+        }
+    }
+
+    cout << "Nenhuma solucao encontrada." << endl;
+}
+
+/*_____________MAIN___________*/
 int main()
 {
     int tam = 0;
@@ -343,11 +498,16 @@ int main()
     }
 
     // Executar as buscas
+    /*
     buscaEmLargura(jarros);
     cout << endl;
     buscaEmProfundidade(jarros);
     cout << endl;
     buscaBacktracking(jarros);
-
+    */
+    cout << endl;
+    buscaOrdenada(jarros);
+    cout << endl;
+    buscaGulosa(jarros);
     return 0;
 }
