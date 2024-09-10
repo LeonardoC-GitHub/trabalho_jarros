@@ -7,6 +7,7 @@
 using namespace std;
 using namespace std::chrono;
 
+
 struct Capacidade
 {
     int capacidadeAtual = 0;
