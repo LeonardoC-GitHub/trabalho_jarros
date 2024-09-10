@@ -148,106 +148,166 @@ bool backtracking(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector
     return false;
 }
 
-// Função para iniciar a busca usando Backtracking
-void buscaBacktracking(const vector<Capacidade> &jarros)
+// Função de Backtracking recursiva
+bool backtrackingRecursivo(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector<vector<int>> &caminho, int &nosExpandidos)
 {
-    cout << "Iniciando Busca com Backtracking..." << endl;
+    if (todosAtingiramObjetivo(jarros))
+    {
+        caminho.push_back(converterEstado(jarros));
+        return true;
+    }
 
+    vector<int> estadoAtual = converterEstado(jarros);
+    if (visitado.count(estadoAtual))
+        return false;
+
+    visitado.insert(estadoAtual);
+    caminho.push_back(estadoAtual);
+    nosExpandidos++;
+
+    // Tenta encher, esvaziar, e transferir entre os jarros
+    for (int i = 0; i < jarros.size(); ++i)
+    {
+        // Encher jarro
+        encherJarro(jarros, i);
+        if (backtrackingRecursivo(jarros, visitado, caminho, nosExpandidos))
+            return true;
+        esvaziarJarro(jarros, i); // Desfazer ação
+
+        // Esvaziar jarro
+        esvaziarJarro(jarros, i);
+        if (backtrackingRecursivo(jarros, visitado, caminho, nosExpandidos))
+            return true;
+        encherJarro(jarros, i); // Desfazer ação
+
+        // Transferir água entre jarros
+        for (int j = 0; j < jarros.size(); ++j)
+        {
+            if (i != j)
+            {
+                transferirAgua(jarros, i, j);
+                if (backtrackingRecursivo(jarros, visitado, caminho, nosExpandidos))
+                    return true;
+                // Desfazer a transferência (inverso)
+                transferirAgua(jarros, j, i);
+            }
+        }
+    }
+
+    caminho.pop_back();
+    return false;
+}
+
+void buscaBacktrackingRecursiva(const vector<Capacidade> &jarros)
+{
     vector<Capacidade> estadoInicial = jarros;
     set<vector<int>> visitado;
     vector<vector<int>> caminho;
-    int nosVisitados = 0, nosExpandidos = 0;
+    int nosExpandidos = 0;
 
     auto start = high_resolution_clock::now();
 
-    if (backtracking(estadoInicial, visitado, caminho, nosExpandidos))
+    if (backtrackingRecursivo(estadoInicial, visitado, caminho, nosExpandidos))
+    {
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start).count();
+        cout << "Solução encontrada em " << duration << " ms." << endl;
+    }
+    else
+    {
+        cout << "Nenhuma solução encontrada." << endl;
+    }
+}
+
+void buscaEmLarguraRecursiva(vector<Capacidade> estadoAtual, set<vector<int>> &visitado,
+                             vector<vector<int>> &caminho, int &nosExpandidos,
+                             int &nosVisitados, const vector<Capacidade> &jarros,
+                             const high_resolution_clock::time_point &start, bool *encontrouSolucao, vector<vector<int>> &solucao)
+
+{
+
+    vector<int> estado = converterEstado(estadoAtual);
+
+    if (visitado.count(estado))
+        return;
+
+    visitado.insert(estado);
+    caminho.push_back(estado);
+    nosExpandidos++;
+
+    // Verifica se atingimos o objetivo
+    if (todosAtingiramObjetivo(estadoAtual))
     {
         nosVisitados = visitado.size();
         double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start).count();
-        exibirEstatisticas("Backtracking", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+        //  exibirEstatisticas("BFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+        solucao.insert(solucao.begin(), estado);
+        *encontrouSolucao = true;
+        return;
     }
-    else
+
+    bool auxSolucao = false;
+    // Gera estados filhos
+    for (int i = 0; i < estadoAtual.size(); ++i)
     {
-        cout << "Nenhuma solucao encontrada." << endl;
-    }
-}
+        vector<Capacidade> novoEstado = estadoAtual;
 
-// Função de BFS (Busca em Largura)
-void buscaEmLargura(const vector<Capacidade> &jarros)
-{
-    cout << "Iniciando Busca em Largura (BFS)..." << endl;
-
-    queue<vector<Capacidade>> fila;
-    set<vector<int>> visitado;
-    vector<vector<int>> caminho;
-    int nosVisitados = 0, nosExpandidos = 0;
-
-    fila.push(jarros);
-
-    auto start = high_resolution_clock::now();
-
-    while (!fila.empty())
-    {
-        vector<Capacidade> estadoAtual = fila.front();
-        fila.pop();
-
-        vector<int> estado = converterEstado(estadoAtual);
-
-        if (visitado.count(estado))
-            continue;
-
-        visitado.insert(estado);
-        caminho.push_back(estado);
-        nosExpandidos++;
-
-        // Verifica se atingimos o objetivo
-        if (todosAtingiramObjetivo(estadoAtual))
+        encherJarro(novoEstado, i);
+        if (!visitado.count(converterEstado(novoEstado)))
         {
-            nosVisitados = visitado.size();
-            double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
-            auto stop = high_resolution_clock::now();
-            auto duration = duration_cast<milliseconds>(stop - start).count();
-            exibirEstatisticas("BFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
-            return;
+            buscaEmLarguraRecursiva(novoEstado, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxSolucao, solucao);
         }
 
-        // Gera estados filhos
-        for (int i = 0; i < estadoAtual.size(); ++i)
+        novoEstado = estadoAtual;
+        esvaziarJarro(novoEstado, i);
+        if (!visitado.count(converterEstado(novoEstado)))
         {
-            vector<Capacidade> novoEstado = estadoAtual;
+            buscaEmLarguraRecursiva(novoEstado, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxSolucao, solucao);
+        }
 
-            encherJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push(novoEstado);
-
-            novoEstado = estadoAtual;
-            esvaziarJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push(novoEstado);
-
-            for (int j = 0; j < estadoAtual.size(); ++j)
+        for (int j = 0; j < estadoAtual.size(); ++j)
+        {
+            if (i != j)
             {
-                if (i != j)
+                novoEstado = estadoAtual;
+                transferirAgua(novoEstado, i, j);
+                if (!visitado.count(converterEstado(novoEstado)))
                 {
-                    novoEstado = estadoAtual;
-                    transferirAgua(novoEstado, i, j);
-                    if (!visitado.count(converterEstado(novoEstado)))
-                        fila.push(novoEstado);
+                    buscaEmLarguraRecursiva(novoEstado, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxSolucao, solucao);
                 }
             }
         }
     }
 
+    if (auxSolucao == true)
+    {
+        solucao.insert(solucao.begin(), estado);
+        *encontrouSolucao = true;
+    }
+}
+
+void buscaEmLargura(const vector<Capacidade> &jarros)
+{
+    cout << "Iniciando Busca em Largura (BFS)..." << endl;
+
+    set<vector<int>> visitado;
+    vector<vector<int>> caminho;
+    vector<vector<int>> resposta;
+    bool auxresposta = false;
+    int nosVisitados = 0, nosExpandidos = 0;
+
+    auto start = high_resolution_clock::now();
+
+    buscaEmLarguraRecursiva(jarros, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxresposta, resposta);
+
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start).count();
 
-    nosVisitados = visitado.size();
     double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
-    exibirEstatisticas("BFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+    exibirEstatisticas("BFS", resposta, nosVisitados, nosExpandidos, fatorRamificacao, duration);
 }
-
 // Função de DFS (Busca em Profundidade)
 void buscaEmProfundidade(const vector<Capacidade> &jarros)
 {
