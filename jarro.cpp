@@ -369,15 +369,18 @@ void buscaOrdenada(const vector<Capacidade> &jarros)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
+            // Encher jarro
             encherJarro(novoEstado, i);
             if (!visitado.count(converterEstado(novoEstado)))
                 fila.push({novoEstado, custoAtual + 1});
 
+            // Esvaziar jarro
             novoEstado = estadoAtual;
             esvaziarJarro(novoEstado, i);
             if (!visitado.count(converterEstado(novoEstado)))
                 fila.push({novoEstado, custoAtual + 1});
 
+            // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
                 if (i != j)
@@ -441,15 +444,18 @@ void buscaGulosa(const vector<Capacidade> &jarros)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
+            // Encher jarro
             encherJarro(novoEstado, i);
             if (!visitado.count(converterEstado(novoEstado)))
                 fila.push({novoEstado, heuristica(novoEstado)});
 
+            // Esvaziar jarro
             novoEstado = estadoAtual;
             esvaziarJarro(novoEstado, i);
             if (!visitado.count(converterEstado(novoEstado)))
                 fila.push({novoEstado, heuristica(novoEstado)});
 
+            // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
                 if (i != j)
@@ -466,7 +472,7 @@ void buscaGulosa(const vector<Capacidade> &jarros)
     cout << "Nenhuma solucao encontrada." << endl;
 }
 
-// Função de busca A*
+// Função de Busca A*
 void buscaAEstrela(const vector<Capacidade> &jarros)
 {
     cout << "Iniciando Busca A*..." << endl;
@@ -475,19 +481,18 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
     {
         return a.second > b.second; // Min-heap com base no custo acumulado + heurística
     };
-
     priority_queue<pair<vector<Capacidade>, int>, vector<pair<vector<Capacidade>, int>>, decltype(cmp)> fila(cmp);
     set<vector<int>> visitado;
     vector<vector<int>> caminho;
     int nosVisitados = 0, nosExpandidos = 0;
 
-    fila.push({jarros, heuristica(jarros)}); // {estado, heurística}
+    fila.push({jarros, heuristica(jarros)});
 
     auto start = high_resolution_clock::now();
 
     while (!fila.empty())
     {
-        auto [estadoAtual, custoHeuristica] = fila.top();
+        auto [estadoAtual, custoHeuristicaAtual] = fila.top();
         fila.pop();
 
         vector<int> estado = converterEstado(estadoAtual);
@@ -499,7 +504,6 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
         caminho.push_back(estado);
         nosExpandidos++;
 
-        // Verifica se atingimos o objetivo
         if (todosAtingiramObjetivo(estadoAtual))
         {
             nosVisitados = visitado.size();
@@ -510,20 +514,23 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
             return;
         }
 
-        // Gera novos estados (encher, esvaziar e transferir)
+        // Gerar novos estados
         for (int i = 0; i < estadoAtual.size(); ++i)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
+            // Encher jarro
             encherJarro(novoEstado, i);
             if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, custoHeuristica + 1 + heuristica(novoEstado)});
+                fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
 
+            // Esvaziar jarro
             novoEstado = estadoAtual;
             esvaziarJarro(novoEstado, i);
             if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, custoHeuristica + 1 + heuristica(novoEstado)});
+                fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
 
+            // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
                 if (i != j)
@@ -531,7 +538,7 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
                     novoEstado = estadoAtual;
                     transferirAgua(novoEstado, i, j);
                     if (!visitado.count(converterEstado(novoEstado)))
-                        fila.push({novoEstado, custoHeuristica + 1 + heuristica(novoEstado)});
+                        fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
                 }
             }
         }
@@ -574,18 +581,68 @@ int main()
     }
       */
     // Executar as buscas
-    /*
+    vector<Capacidade> jarros = {
+        {0, 4, 2}, // Jarro 1: capacidade atual = 0, capacidade máxima = 3, objetivo = 2
+        {0, 3, 0}  // Jarro 2: capacidade atual = 0, capacidade máxima = 5, objetivo = 4
+    };
     buscaEmLargura(jarros);
+    /*
     cout << endl;
     buscaEmProfundidade(jarros);
     cout << endl;
     buscaBacktracking(jarros);
+    char opcao = 0;
+
+    while (true)
+    {
+
+        cout << "Escolha o metodo de busca: " << endl;
+        cout << "1. Busca em Largura (BFS)" << endl;
+        cout << "2. Busca em Profundidade (DFS)" << endl;
+        cout << "3. Backtracking" << endl;
+        cout << "4. Busca Ordenada (UCS)" << endl;
+        cout << "5. Busca Gulosa" << endl;
+        cout << "6. Busca A*" << endl;
+        cout << "X. sair" << endl;
+        cout << "Opcao: ";
+        cin >> opcao;
+
+        switch (opcao)
+        {
+        case '1':
+            buscaEmLargura(jarros);
+            cout << endl;
+            break;
+        case '2':
+            buscaEmProfundidade(jarros);
+            cout << endl;
+            break;
+        case '3':
+            buscaBacktracking(jarros);
+            cout << endl;
+            break;
+        case '4':
+            buscaOrdenada(jarros);
+            cout << endl;
+            break;
+        case '5':
+            buscaGulosa(jarros);
+            cout << endl;
+            break;
+        case '6':
+            buscaAEstrela(jarros);
+            cout << endl;
+            break;
+        case 'x':
+            exit(1);
+            break;
+        case 'X':
+            exit(1);
+            break;
+        default:
+            cout << "Opcao invalida!" << endl;
+        }
+    }
     */
-    vector<Capacidade> jarros = {{0, 8, 4}, {0, 5, 4}, {0, 3, 2}};
-    cout << endl;
-    // buscaOrdenada(jarros);
-    cout << endl;
-    // buscaGulosa(jarros);
-    buscaAEstrela(jarros);
     return 0;
 }
