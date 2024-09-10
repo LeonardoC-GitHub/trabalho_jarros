@@ -3,6 +3,7 @@
 #include <queue>  // Para BFS
 #include <stack>  // Para DFS
 #include <chrono> // Para medir o tempo de execucao
+#include <set>    // Para armazenar estados visitados
 
 using namespace std;
 using namespace std::chrono;
@@ -18,6 +19,126 @@ struct Capacidade
 bool atingiuObjetivo(const Capacidade &jarro)
 {
     return jarro.capacidadeAtual == jarro.objetivo;
+}
+
+// Funcao para verificar se todos os jarros atingiram seus objetivos
+bool todosAtingiramObjetivo(const vector<Capacidade> &jarros)
+{
+    for (const auto &jarro : jarros)
+    {
+        if (!atingiuObjetivo(jarro))
+            return false;
+    }
+    return true;
+}
+
+// Funcao para encher um jarro
+void encherJarro(vector<Capacidade> &jarros, int index)
+{
+    jarros[index].capacidadeAtual = jarros[index].capacidadeMax;
+}
+
+// Funcao para esvaziar um jarro
+void esvaziarJarro(vector<Capacidade> &jarros, int index)
+{
+    jarros[index].capacidadeAtual = 0;
+}
+
+// Funcao para transferir agua de um jarro para outro
+void transferirAgua(vector<Capacidade> &jarros, int from, int to)
+{
+    int quantidade = min(jarros[from].capacidadeAtual, jarros[to].capacidadeMax - jarros[to].capacidadeAtual);
+    jarros[from].capacidadeAtual -= quantidade;
+    jarros[to].capacidadeAtual += quantidade;
+}
+
+// Funcao de Backtracking
+bool backtracking(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector<vector<int>> &caminho)
+{
+    // Verifica se todos os jarros atingiram os objetivos
+    if (todosAtingiramObjetivo(jarros))
+    {
+        return true;
+    }
+
+    // Cria um estado atual para verificar se ja foi visitado
+    vector<int> estadoAtual;
+    for (const auto &jarro : jarros)
+    {
+        estadoAtual.push_back(jarro.capacidadeAtual);
+    }
+
+    // Se o estado ja foi visitado, retorna falso
+    if (visitado.count(estadoAtual))
+        return false;
+
+    // Marca o estado como visitado
+    visitado.insert(estadoAtual);
+    caminho.push_back(estadoAtual);
+
+    // Tenta encher, esvaziar, e transferir entre os jarros
+    for (int i = 0; i < jarros.size(); ++i)
+    {
+        // Tenta encher o jarro i
+        vector<Capacidade> novoEstado = jarros;
+        encherJarro(novoEstado, i);
+        if (backtracking(novoEstado, visitado, caminho))
+            return true;
+
+        // Tenta esvaziar o jarro i
+        novoEstado = jarros;
+        esvaziarJarro(novoEstado, i);
+        if (backtracking(novoEstado, visitado, caminho))
+            return true;
+
+        // Tenta transferir agua entre jarros
+        for (int j = 0; j < jarros.size(); ++j)
+        {
+            if (i != j)
+            {
+                novoEstado = jarros;
+                transferirAgua(novoEstado, i, j);
+                if (backtracking(novoEstado, visitado, caminho))
+                    return true;
+            }
+        }
+    }
+
+    // Backtrack
+    caminho.pop_back();
+    return false;
+}
+
+// Funcao para iniciar a busca usando Backtracking
+void buscaBacktracking(const vector<Capacidade> &jarros)
+{
+    cout << "Iniciando Busca com Backtracking..." << endl;
+
+    vector<Capacidade> estadoInicial = jarros;
+    set<vector<int>> visitado;   // Usado para evitar repeticao de estados
+    vector<vector<int>> caminho; // Caminho ate a solucao
+
+    auto start = high_resolution_clock::now(); // Inicia o cronometro
+
+    if (backtracking(estadoInicial, visitado, caminho))
+    {
+        cout << "Solucao encontrada!\nCaminho para a solucao:\n";
+        for (const auto &estado : caminho)
+        {
+            for (int cap : estado)
+                cout << cap << " ";
+            cout << endl;
+        }
+    }
+    else
+    {
+        cout << "Nenhuma solucao encontrada." << endl;
+    }
+
+    auto stop = high_resolution_clock::now();                  // Para o cronometro
+    auto duration = duration_cast<milliseconds>(stop - start); // Calcula a duracao
+
+    cout << "Tempo de execucao: " << duration.count() << " ms" << endl;
 }
 
 // Busca em Largura
@@ -194,10 +315,12 @@ int main()
         cin >> jarros[i].capacidadeAtual;
     }
 
-    // Executar BFS e DFS
+    // executar
     buscaEmLargura(jarros);
     cout << endl;
     buscaEmProfundidade(jarros);
+    cout << endl;
+    buscaBacktracking(jarros);
 
     return 0;
 }
