@@ -170,56 +170,6 @@ bool backtracking(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector
     return false;
 }
 
-// Função de Backtracking recursiva
-bool backtrackingRecursivo(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector<vector<int>> &caminho, int &nosExpandidos)
-{
-    if (todosAtingiramObjetivo(jarros))
-    {
-        caminho.push_back(converterEstado(jarros));
-        return true;
-    }
-
-    vector<int> estadoAtual = converterEstado(jarros);
-    if (visitado.count(estadoAtual))
-        return false;
-
-    visitado.insert(estadoAtual);
-    caminho.push_back(estadoAtual);
-    nosExpandidos++;
-
-    // Tenta encher, esvaziar, e transferir entre os jarros
-    for (int i = 0; i < jarros.size(); ++i)
-    {
-        // Encher jarro
-        encherJarro(jarros, i);
-        if (backtrackingRecursivo(jarros, visitado, caminho, nosExpandidos))
-            return true;
-        esvaziarJarro(jarros, i); // Desfazer ação
-
-        // Esvaziar jarro
-        esvaziarJarro(jarros, i);
-        if (backtrackingRecursivo(jarros, visitado, caminho, nosExpandidos))
-            return true;
-        encherJarro(jarros, i); // Desfazer ação
-
-        // Transferir água entre jarros
-        for (int j = 0; j < jarros.size(); ++j)
-        {
-            if (i != j)
-            {
-                transferirAgua(jarros, i, j);
-                if (backtrackingRecursivo(jarros, visitado, caminho, nosExpandidos))
-                    return true;
-                // Desfazer a transferência (inverso)
-                transferirAgua(jarros, j, i);
-            }
-        }
-    }
-
-    caminho.pop_back();
-    return false;
-}
-
 void buscaBacktrackingRecursiva(const vector<Capacidade> &jarros)
 {
     vector<Capacidade> estadoInicial = jarros;
@@ -229,11 +179,13 @@ void buscaBacktrackingRecursiva(const vector<Capacidade> &jarros)
 
     auto start = high_resolution_clock::now();
 
-    if (backtrackingRecursivo(estadoInicial, visitado, caminho, nosExpandidos))
+    if (backtracking(estadoInicial, visitado, caminho, nosExpandidos))
     {
+        int nosVisitados = visitado.size();
+        double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start).count();
-        cout << "Solução encontrada em " << duration << " ms." << endl;
+        exibirEstatisticas("Busca em Backtracking", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
     }
     else
     {
@@ -601,7 +553,7 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
 int main()
 {
     int tam = 0;
-    /*
+
     cout << "Informe a quantidade de jarros: ";
     cin >> tam;
 
@@ -629,20 +581,14 @@ int main()
         cout << "Jarro " << i + 1 << ": ";
         cin >> jarros[i].capacidadeAtual;
     }
-      */
-    // Executar as buscas
-    vector<Capacidade> jarros = {
+    /*
+        // Executar as buscas
+
+        vector<Capacidade> jarros = {
         {0, 4, 0},
         {0, 3, 2}, // Jarro 1: capacidade atual = 0, capacidade máxima = 3, objetivo = 2
         {0, 9, 0}  // Jarro 2: capacidade atual = 0, capacidade máxima = 5, objetivo = 4
     };
-    /*
-    buscaEmLargura(jarros);
-
-    cout << endl;
-    buscaEmProfundidade(jarros);
-    cout << endl;
-    buscaBacktracking(jarros);
     */
     char opcao = 0;
 
