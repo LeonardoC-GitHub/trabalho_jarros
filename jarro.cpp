@@ -32,6 +32,28 @@ bool todosAtingiramObjetivo(const vector<Capacidade> &jarros)
     return true;
 }
 
+// Função para verificar se todos os jarros estão cheios
+bool todosCheios(const vector<Capacidade> &jarros)
+{
+    for (const auto &jarro : jarros)
+    {
+        if (jarro.capacidadeAtual != jarro.capacidadeMax)
+            return false;
+    }
+    return true;
+}
+
+// Função para verificar se todos os jarros estão vazios
+bool todosVazios(const vector<Capacidade> &jarros)
+{
+    for (const auto &jarro : jarros)
+    {
+        if (jarro.capacidadeAtual != 0)
+            return false;
+    }
+    return true;
+}
+
 // Função para encher um jarro
 void encherJarro(vector<Capacidade> &jarros, int index)
 {
@@ -219,116 +241,25 @@ void buscaBacktrackingRecursiva(const vector<Capacidade> &jarros)
     }
 }
 
-void buscaEmLarguraRecursiva(vector<Capacidade> estadoAtual, set<vector<int>> &visitado,
-                             vector<vector<int>> &caminho, int &nosExpandidos,
-                             int &nosVisitados, const vector<Capacidade> &jarros,
-                             const high_resolution_clock::time_point &start, bool *encontrouSolucao, vector<vector<int>> &solucao)
-
-{
-
-    vector<int> estado = converterEstado(estadoAtual);
-
-    if (visitado.count(estado))
-        return;
-
-    visitado.insert(estado);
-    caminho.push_back(estado);
-    nosExpandidos++;
-
-    // Verifica se atingimos o objetivo
-    if (todosAtingiramObjetivo(estadoAtual))
-    {
-        nosVisitados = visitado.size();
-        double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
-        auto stop = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(stop - start).count();
-        //  exibirEstatisticas("BFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
-        solucao.insert(solucao.begin(), estado);
-        *encontrouSolucao = true;
-        return;
-    }
-
-    bool auxSolucao = false;
-    // Gera estados filhos
-    for (int i = 0; i < estadoAtual.size(); ++i)
-    {
-        vector<Capacidade> novoEstado = estadoAtual;
-
-        encherJarro(novoEstado, i);
-        if (!visitado.count(converterEstado(novoEstado)))
-        {
-            buscaEmLarguraRecursiva(novoEstado, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxSolucao, solucao);
-        }
-
-        novoEstado = estadoAtual;
-        esvaziarJarro(novoEstado, i);
-        if (!visitado.count(converterEstado(novoEstado)))
-        {
-            buscaEmLarguraRecursiva(novoEstado, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxSolucao, solucao);
-        }
-
-        for (int j = 0; j < estadoAtual.size(); ++j)
-        {
-            if (i != j)
-            {
-                novoEstado = estadoAtual;
-                transferirAgua(novoEstado, i, j);
-                if (!visitado.count(converterEstado(novoEstado)))
-                {
-                    buscaEmLarguraRecursiva(novoEstado, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxSolucao, solucao);
-                }
-            }
-        }
-    }
-
-    if (auxSolucao == true)
-    {
-        solucao.insert(solucao.begin(), estado);
-        *encontrouSolucao = true;
-    }
-}
-
+// Função de Busca em Largura (BFS)
 void buscaEmLargura(const vector<Capacidade> &jarros)
 {
-    cout << "Iniciando Busca em Largura (BFS)..." << endl;
+    cout << "Iniciando Busca em Largura..." << endl;
 
-    set<vector<int>> visitado;
-    vector<vector<int>> caminho;
-    vector<vector<int>> resposta;
-    bool auxresposta = false;
-    int nosVisitados = 0, nosExpandidos = 0;
-
-    auto start = high_resolution_clock::now();
-
-    buscaEmLarguraRecursiva(jarros, visitado, caminho, nosExpandidos, nosVisitados, jarros, start, &auxresposta, resposta);
-
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(stop - start).count();
-
-    double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
-    exibirEstatisticas("BFS", resposta, nosVisitados, nosExpandidos, fatorRamificacao, duration);
-}
-// Função de DFS (Busca em Profundidade)
-void buscaEmProfundidade(const vector<Capacidade> &jarros)
-{
-    cout << "Iniciando Busca em Profundidade (DFS)..." << endl;
-
-    stack<vector<Capacidade>> pilha;
+    queue<vector<Capacidade>> fila;
     set<vector<int>> visitado;
     vector<vector<int>> caminho;
     int nosVisitados = 0, nosExpandidos = 0;
 
-    pilha.push(jarros);
-
+    fila.push(jarros);
     auto start = high_resolution_clock::now();
 
-    while (!pilha.empty())
+    while (!fila.empty())
     {
-        vector<Capacidade> estadoAtual = pilha.top();
-        pilha.pop();
+        vector<Capacidade> estadoAtual = fila.front();
+        fila.pop();
 
         vector<int> estado = converterEstado(estadoAtual);
-
         if (visitado.count(estado))
             continue;
 
@@ -343,7 +274,7 @@ void buscaEmProfundidade(const vector<Capacidade> &jarros)
             double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
             auto stop = high_resolution_clock::now();
             auto duration = duration_cast<milliseconds>(stop - start).count();
-            exibirEstatisticas("DFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+            exibirEstatisticas("Busca em Largura", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
             return;
         }
 
@@ -352,40 +283,99 @@ void buscaEmProfundidade(const vector<Capacidade> &jarros)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
+            // Encher jarro
             encherJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                pilha.push(novoEstado);
+            fila.push(novoEstado);
 
+            // Esvaziar jarro
             novoEstado = estadoAtual;
             esvaziarJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                pilha.push(novoEstado);
+            fila.push(novoEstado);
 
+            // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
                 if (i != j)
                 {
                     novoEstado = estadoAtual;
                     transferirAgua(novoEstado, i, j);
-                    if (!visitado.count(converterEstado(novoEstado)))
-                        pilha.push(novoEstado);
+                    fila.push(novoEstado);
                 }
             }
         }
     }
-
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(stop - start).count();
-
-    nosVisitados = visitado.size();
-    double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
-    exibirEstatisticas("DFS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
 }
 
-// Função de UCS (Busca de Custo Uniforme)
+// Função de Busca em Profundidade (DFS) usando Pilha
+void buscaEmProfundidade(const vector<Capacidade> &jarros)
+{
+    cout << "Iniciando Busca em Profundidade..." << endl;
+
+    stack<vector<Capacidade>> pilha;
+    set<vector<int>> visitado;
+    vector<vector<int>> caminho;
+    int nosVisitados = 0, nosExpandidos = 0;
+
+    pilha.push(jarros);
+    auto start = high_resolution_clock::now();
+
+    while (!pilha.empty())
+    {
+        vector<Capacidade> estadoAtual = pilha.top();
+        pilha.pop();
+
+        vector<int> estado = converterEstado(estadoAtual);
+        if (visitado.count(estado))
+            continue;
+
+        visitado.insert(estado);
+        caminho.push_back(estado);
+        nosExpandidos++;
+
+        // Verifica se atingimos o objetivo
+        if (todosAtingiramObjetivo(estadoAtual))
+        {
+            nosVisitados = visitado.size();
+            double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<milliseconds>(stop - start).count();
+            exibirEstatisticas("Busca em Profundidade", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+            return;
+        }
+
+        // Gera estados filhos (em ordem reversa para simular a pilha)
+        for (int i = estadoAtual.size() - 1; i >= 0; --i)
+        {
+            vector<Capacidade> novoEstado = estadoAtual;
+
+            // Transferir água entre jarros
+            for (int j = estadoAtual.size() - 1; j >= 0; --j)
+            {
+                if (i != j)
+                {
+                    novoEstado = estadoAtual;
+                    transferirAgua(novoEstado, i, j);
+                    pilha.push(novoEstado);
+                }
+            }
+
+            // Esvaziar jarro
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            pilha.push(novoEstado);
+
+            // Encher jarro
+            novoEstado = estadoAtual;
+            encherJarro(novoEstado, i);
+            pilha.push(novoEstado);
+        }
+    }
+}
+
+// Função de Busca de Custo Uniforme
 void buscaOrdenada(const vector<Capacidade> &jarros)
 {
-    cout << "Iniciando Busca Ordenada (UCS)..." << endl;
+    cout << "Iniciando Busca Ordenada ..." << endl;
 
     auto cmp = [](const pair<vector<Capacidade>, int> &a, const pair<vector<Capacidade>, int> &b)
     {
@@ -420,7 +410,7 @@ void buscaOrdenada(const vector<Capacidade> &jarros)
             double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
             auto stop = high_resolution_clock::now();
             auto duration = duration_cast<milliseconds>(stop - start).count();
-            exibirEstatisticas("UCS", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+            exibirEstatisticas("Busca Ordenada", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
             return;
         }
 
@@ -642,15 +632,18 @@ int main()
       */
     // Executar as buscas
     vector<Capacidade> jarros = {
-        {0, 4, 2}, // Jarro 1: capacidade atual = 0, capacidade máxima = 3, objetivo = 2
-        {0, 3, 0}  // Jarro 2: capacidade atual = 0, capacidade máxima = 5, objetivo = 4
+        {0, 4, 0},
+        {0, 3, 2}, // Jarro 1: capacidade atual = 0, capacidade máxima = 3, objetivo = 2
+        {0, 9, 0}  // Jarro 2: capacidade atual = 0, capacidade máxima = 5, objetivo = 4
     };
-    buscaEmLargura(jarros);
     /*
+    buscaEmLargura(jarros);
+
     cout << endl;
     buscaEmProfundidade(jarros);
     cout << endl;
     buscaBacktracking(jarros);
+    */
     char opcao = 0;
 
     while (true)
@@ -678,7 +671,7 @@ int main()
             cout << endl;
             break;
         case '3':
-            buscaBacktracking(jarros);
+            buscaBacktrackingRecursiva(jarros);
             cout << endl;
             break;
         case '4':
@@ -703,6 +696,5 @@ int main()
             cout << "Opcao invalida!" << endl;
         }
     }
-    */
     return 0;
 }
