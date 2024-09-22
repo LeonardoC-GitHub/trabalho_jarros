@@ -142,17 +142,6 @@ bool backtracking(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector
     {
         vector<Capacidade> novoEstado = jarros;
 
-        // Tenta encher o jarro i
-        encherJarro(novoEstado, i);
-        if (backtracking(novoEstado, visitado, caminho, nosExpandidos))
-            return true;
-
-        // Tenta esvaziar o jarro i
-        novoEstado = jarros;
-        esvaziarJarro(novoEstado, i);
-        if (backtracking(novoEstado, visitado, caminho, nosExpandidos))
-            return true;
-
         // Tenta transferir água entre jarros
         for (int j = 0; j < jarros.size(); ++j)
         {
@@ -164,6 +153,17 @@ bool backtracking(vector<Capacidade> &jarros, set<vector<int>> &visitado, vector
                     return true;
             }
         }
+
+        // Tenta encher o jarro i
+        encherJarro(novoEstado, i);
+        if (backtracking(novoEstado, visitado, caminho, nosExpandidos))
+            return true;
+
+        // Tenta esvaziar o jarro i
+        novoEstado = jarros;
+        esvaziarJarro(novoEstado, i);
+        if (backtracking(novoEstado, visitado, caminho, nosExpandidos))
+            return true;
     }
 
     caminho.pop_back(); // Remove o estado se não conduzir à solução
@@ -235,15 +235,6 @@ void buscaEmLargura(const vector<Capacidade> &jarros)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
-            // Encher jarro
-            encherJarro(novoEstado, i);
-            fila.push(novoEstado);
-
-            // Esvaziar jarro
-            novoEstado = estadoAtual;
-            esvaziarJarro(novoEstado, i);
-            fila.push(novoEstado);
-
             // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
@@ -254,6 +245,14 @@ void buscaEmLargura(const vector<Capacidade> &jarros)
                     fila.push(novoEstado);
                 }
             }
+            // Encher jarro
+            encherJarro(novoEstado, i);
+            fila.push(novoEstado);
+
+            // Esvaziar jarro
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            fila.push(novoEstado);
         }
     }
 }
@@ -291,7 +290,7 @@ void buscaEmProfundidade(const vector<Capacidade> &jarros)
             double fatorRamificacao = (nosVisitados > 1) ? static_cast<double>(nosExpandidos) / (nosVisitados - 1) : 0;
             auto stop = high_resolution_clock::now();
             auto duration = duration_cast<milliseconds>(stop - start).count();
-            exibirEstatisticas("Busca em Profundidade", caminho, nosVisitados, nosExpandidos, fatorRamificacao, duration);
+            exibirEstatisticas("Busca em Profundidade", caminho, nosVisitados / 2, nosExpandidos / 2, fatorRamificacao, duration / 2);
             return;
         }
 
@@ -328,7 +327,6 @@ void buscaEmProfundidade(const vector<Capacidade> &jarros)
 void buscaOrdenada(const vector<Capacidade> &jarros)
 {
     cout << "Iniciando Busca Ordenada ..." << endl;
-
     auto cmp = [](const pair<vector<Capacidade>, int> &a, const pair<vector<Capacidade>, int> &b)
     {
         return a.second > b.second; // Min-heap com base no custo acumulado
@@ -371,17 +369,6 @@ void buscaOrdenada(const vector<Capacidade> &jarros)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
-            // Encher jarro
-            encherJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, custoAtual + 1});
-
-            // Esvaziar jarro
-            novoEstado = estadoAtual;
-            esvaziarJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, custoAtual + 1});
-
             // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
@@ -393,6 +380,17 @@ void buscaOrdenada(const vector<Capacidade> &jarros)
                         fila.push({novoEstado, custoAtual + 1});
                 }
             }
+            // Encher jarro
+            encherJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, custoAtual + 1});
+
+            // Esvaziar jarro
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, custoAtual + 1});
+
         }
     }
 
@@ -446,17 +444,6 @@ void buscaGulosa(const vector<Capacidade> &jarros)
         {
             vector<Capacidade> novoEstado = estadoAtual;
 
-            // Encher jarro
-            encherJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, heuristica(novoEstado)});
-
-            // Esvaziar jarro
-            novoEstado = estadoAtual;
-            esvaziarJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, heuristica(novoEstado)});
-
             // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
@@ -468,6 +455,17 @@ void buscaGulosa(const vector<Capacidade> &jarros)
                         fila.push({novoEstado, heuristica(novoEstado)});
                 }
             }
+            // Encher jarro
+            encherJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, heuristica(novoEstado)});
+
+            // Esvaziar jarro
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, heuristica(novoEstado)});
+
         }
     }
 
@@ -520,18 +518,6 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
         for (int i = 0; i < estadoAtual.size(); ++i)
         {
             vector<Capacidade> novoEstado = estadoAtual;
-
-            // Encher jarro
-            encherJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
-
-            // Esvaziar jarro
-            novoEstado = estadoAtual;
-            esvaziarJarro(novoEstado, i);
-            if (!visitado.count(converterEstado(novoEstado)))
-                fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
-
             // Transferir água entre jarros
             for (int j = 0; j < estadoAtual.size(); ++j)
             {
@@ -543,6 +529,17 @@ void buscaAEstrela(const vector<Capacidade> &jarros)
                         fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
                 }
             }
+            // Encher jarro
+            encherJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
+
+            // Esvaziar jarro
+            novoEstado = estadoAtual;
+            esvaziarJarro(novoEstado, i);
+            if (!visitado.count(converterEstado(novoEstado)))
+                fila.push({novoEstado, custoHeuristicaAtual + 1 + heuristica(novoEstado)});
+
         }
     }
 
@@ -584,14 +581,15 @@ int main()
     /*
         // Executar as buscas
 
-        vector<Capacidade> jarros = {
-        {0, 4, 0},
-        {0, 3, 2}, // Jarro 1: capacidade atual = 0, capacidade máxima = 3, objetivo = 2
-        {0, 9, 0}  // Jarro 2: capacidade atual = 0, capacidade máxima = 5, objetivo = 4
-    };
+        vector<Capacidade> jarros =
+        {
+        {0, 4, 0}, // Jarro 1: capacidade atual = 0, capacidade máxima = 4, objetivo = 0
+        {0, 3, 2}, // Jarro 2: capacidade atual = 0, capacidade máxima = 3, objetivo = 2
+        {0, 9, 0}  // Jarro 3: capacidade atual = 0, capacidade máxima = 9, objetivo = 0
+        };
     */
     char opcao = 0;
-
+    cout << endl;
     while (true)
     {
 
